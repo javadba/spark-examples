@@ -65,10 +65,10 @@ public class SparkLocalExample {
         network.init();
         System.out.println("Initializing network");
         SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
-        DataSet d = new MnistDataSetIterator(60000,60000).next();
+        DataSet d = new MnistDataSetIterator(100,100).next();
         List<DataSet> next = new ArrayList<>();
         for(int i = 0; i < d.numExamples(); i++)
-            next.add(d.get(i).copy());
+             next.add(d.get(i).copy());
 
         JavaRDD<DataSet> data = sc.parallelize(next);
         MultiLayerNetwork network2 = master.fitDataSet(data);
