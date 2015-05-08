@@ -7,20 +7,20 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.models.featuredetectors.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.preprocessor.BinomialSamplingPreProcessor;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -73,7 +73,10 @@ public class DistributedExample {
                 .setAppName("mnist");
 
         System.out.println("Setting up Spark Context...");
-        Nd4j.dtype = DataBuffer.FLOAT;
+        Nd4j.dtype = DataBuffer.Type.FLOAT;
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        INDArray n = Nd4j.create(5);
+
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         Map<Integer,OutputPreProcessor> preProcessorMap = new HashMap<>();
@@ -81,11 +84,15 @@ public class DistributedExample {
         preProcessorMap.put(1,new BinomialSamplingPreProcessor());
         preProcessorMap.put(2,new BinomialSamplingPreProcessor());
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(app.iterations).momentum(0.5)
-                .l2(2e-4).regularization(true).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .nIn(784).nOut(10).layerFactory(LayerFactories.getFactory(RBM.class)).batchSize(app.batchSize).momentumAfter(Collections.singletonMap(20, 0.9))
+        MultiLayerConfiguration conf = new NeuralNetConfiguration
+                .Builder().iterations(app.iterations).momentum(0.5)
+                .l2(2e-4).regularization(true)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .nIn(784).nOut(10)
+                .layer(new RBM()).batchSize(app.batchSize).momentumAfter(Collections.singletonMap(20, 0.9))
                 .list(4).hiddenLayerSizes(600, 500, 400)
-                .override(new ClassifierOverride(3)).build();
+                .override(3, new ClassifierOverride(3)).build();
+
 
 
         System.out.println("Initializing network");
@@ -98,7 +105,6 @@ public class DistributedExample {
         JavaRDD<DataSet> data = sc.parallelize(next);
 
         MultiLayerNetwork network = master.fitDataSet(data);
-
 
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(),network.output(d.getFeatureMatrix()));
