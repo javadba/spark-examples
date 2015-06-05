@@ -14,3 +14,6 @@ If you run mvn clean package on spark foor a spark job, the backends you include
 
 You can create a jar file appropriate for spark-submit via the maven shade plugin (included in this pom). You can also run spark standalone. We have 1 example for each.
 
+#Spark.ml
+If you would like to use the newer spark.ml, please see:
+https://github.com/deeplearning4j/dl4j-spark-ml-examples
