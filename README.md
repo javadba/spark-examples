@@ -1,6 +1,6 @@
 # spark-examples
 
-This example contains code for running DL4J on Spark standalone as well as normal spark.
+This example contains code for running DL4J on Spark standalone as well as normal Spark. 
 
 DL4J interoperates with Spark via dedicated classes and workers that take a Spark context and a neural net configuration. 
 
